@@ -1,10 +1,38 @@
-NUTS_one_step = function(theta, iter, f, grad_f, par_list, delta = 0.5, max_treedepth = 10, eps = 1, verbose = TRUE){
+#' No-U-Turn sampler
+#'
+#' @param theta Initial value for the parameters
+#' @param f log-likelihood function (up to a constant)
+#' @param grad_f the gradient of the log-likelihood function
+#' @param n_iter Number of MCMC iterations
+#' @param M_diag Diagonal elements of the mass matrix in HMC. Defaults to ones.
+#' @param M_adapt Parameter M_adapt in algorithm 6 in the NUTS paper
+#' @param delta Target acceptance ratio, defaults to 0.5
+#' @param max_treedepth Maximum depth of the binary trees constructed by NUTS
+#' @param eps Starting guess for epsilon
+#' @return Matrix with the trace of sampled parameters. Each mcmc iteration in rows and parameters in columns.
+#' @export
+NUTS <- function(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50, delta = 0.5, max_treedepth = 10, eps = 1, verbose = TRUE){
+  theta_trace <- matrix(0, n_iter, length(theta))
+  par_list <- list(M_adapt = M_adapt)
+  for(iter in 1:n_iter){
+    nuts <- NUTS_one_step(theta, iter, f, grad_f, par_list, delta = delta, max_treedepth = max_treedepth, eps = eps, verbose = verbose)
+    theta <- nuts$theta
+    par_list <- nuts$pars
+    theta_trace[iter, ] <- theta
+  }
+  theta_trace
+}
+
+
+NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_treedepth = 10, eps = 1, verbose = TRUE){
   kappa <- 0.75
   t0 <- 10
   gamma <- 0.05
   M_adapt <- par_list$M_adapt
   if(is.null(par_list$M_diag)){
     M_diag <- rep(1, length(theta))
+  } else{
+    M_diag <- par_list$M_diag
   }
 
   if(iter == 1){
@@ -35,7 +63,6 @@ NUTS_one_step = function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tree
   if(iter > M_adapt){
     eps <- runif(1, 0.9*eps_bar, 1.1*eps_bar)
   }
-  # epsilon, theta
   while(s == 1){
     # choose direction {-1, 1}
     direction <- sample(c(-1, 1), 1)
@@ -70,6 +97,7 @@ NUTS_one_step = function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tree
   } else{
     eps <- eps_bar
   }
+
   return(list(theta = theta,
               pars = list(eps = eps, eps_bar = eps_bar, H = H, mu = mu, M_adapt = M_adapt, M_diag = M_diag)))
 }
