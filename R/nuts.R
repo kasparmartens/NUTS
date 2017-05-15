@@ -82,7 +82,7 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
       }
     }
     n <- n + temp$n
-    s <- temp$s * check_NUTS(theta_plus, theta_minus, r_plus, r_minus)
+    s <- check_NUTS(temp$s, theta_plus, theta_minus, r_plus, r_minus)
     j <- j + 1
     if(j > max_treedepth){
       warning("NUTS: Reached max tree depth")

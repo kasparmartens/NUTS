@@ -29,10 +29,11 @@ find_reasonable_epsilon = function(theta, f, grad_f, M_diag, eps = 1, verbose = 
   eps
 }
 
-check_NUTS = function(theta_plus, theta_minus, r_plus, r_minus){
+check_NUTS = function(s, theta_plus, theta_minus, r_plus, r_minus){
+  if(is.na(s)) return(0)
   condition1 <- crossprod(theta_plus - theta_minus, r_minus) >= 0
   condition2 <- crossprod(theta_plus - theta_minus, r_plus) >= 0
-  condition1 && condition2
+  s && condition1 && condition2
 }
 
 build_tree = function(theta, r, u, v, j, eps, theta0, r0, f, grad_f, M_diag, Delta_max = 1000){
@@ -45,6 +46,13 @@ build_tree = function(theta, r, u, v, j, eps, theta0, r0, f, grad_f, M_diag, Del
     n <- (log(u) <= log_prob)
     s <- (log(u) < Delta_max + log_prob)
     alpha <- min(1, exp(log_prob - log_prob0))
+    if(is.nan(alpha)) stop()
+    if(is.na(s) || is.nan(s)){
+      s <- 0
+    }
+    if(is.na(n) || is.nan(n)){
+      n <- 0
+    }
     return(list(theta_minus=theta, theta_plus=theta, theta=theta, r_minus=r,
                 r_plus=r, s=s, n=n, alpha=alpha, n_alpha=1))
   } else{
@@ -71,7 +79,7 @@ build_tree = function(theta, r, u, v, j, eps, theta0, r0, f, grad_f, M_diag, Del
           theta <- obj1$theta
         }
       }
-      s <- obj1$s * check_NUTS(theta_plus, theta_minus, r_plus, r_minus)
+      s <- check_NUTS(obj1$s, theta_plus, theta_minus, r_plus, r_minus)
       alpha <- obj0$alpha + obj1$alpha
       n_alpha <- obj0$n_alpha + obj1$n_alpha
 
@@ -80,6 +88,12 @@ build_tree = function(theta, r, u, v, j, eps, theta0, r0, f, grad_f, M_diag, Del
       s <- obj0$s
       alpha <- obj0$alpha
       n_alpha <- obj0$n_alpha
+    }
+    if(is.na(s) || is.nan(s)){
+      s <- 0
+    }
+    if(is.na(n) || is.nan(n)){
+      n <- 0
     }
     return(list(theta_minus=theta_minus, theta_plus=theta_plus, theta=theta,
                 r_minus=r_minus, r_plus=r_plus, s=s, n=n, alpha=alpha, n_alpha=n_alpha))
