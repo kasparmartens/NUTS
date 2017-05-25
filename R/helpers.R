@@ -1,6 +1,6 @@
-leapfrog_step = function(theta, r, eps, grad_f){
+leapfrog_step = function(theta, r, eps, grad_f, M_diag){
   r_tilde <- r + 0.5 * eps * grad_f(theta)
-  theta_tilde <- theta + eps * r_tilde
+  theta_tilde <- theta + eps * r_tilde / M_diag
   r_tilde <- r_tilde + 0.5 * eps * grad_f(theta_tilde)
   list(theta = theta_tilde, r = r_tilde)
 }
@@ -11,14 +11,14 @@ joint_log_density = function(theta, r, f, M_diag){
 
 find_reasonable_epsilon = function(theta, f, grad_f, M_diag, eps = 1, verbose = TRUE){
   r <- rnorm(length(theta), 0, sqrt(M_diag))
-  proposed <- leapfrog_step(theta, r, eps, grad_f)
+  proposed <- leapfrog_step(theta, r, eps, grad_f, M_diag)
   log_ratio <- joint_log_density(proposed$theta, proposed$r, f, M_diag) - joint_log_density(theta, r, f, M_diag)
   alpha <- ifelse(exp(log_ratio) > 0.5, 1, -1)
   if(is.nan(alpha)) alpha <- -1
   count <- 1
   while(is.nan(log_ratio) || alpha * log_ratio > (-alpha)*log(2)){
     eps <- 2**alpha * eps
-    proposed <- leapfrog_step(theta, r, eps, grad_f)
+    proposed <- leapfrog_step(theta, r, eps, grad_f, M_diag)
     log_ratio <- joint_log_density(proposed$theta, proposed$r, f, M_diag) - joint_log_density(theta, r, f, M_diag)
     count <- count + 1
     if(count > 100) {
@@ -38,7 +38,7 @@ check_NUTS = function(s, theta_plus, theta_minus, r_plus, r_minus){
 
 build_tree = function(theta, r, u, v, j, eps, theta0, r0, f, grad_f, M_diag, Delta_max = 1000){
   if(j == 0){
-    proposed <- leapfrog_step(theta, r, v*eps, grad_f)
+    proposed <- leapfrog_step(theta, r, v*eps, grad_f, M_diag)
     theta <- proposed$theta
     r <- proposed$r
     log_prob <- joint_log_density(theta, r, f, M_diag)
