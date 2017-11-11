@@ -17,7 +17,7 @@ NUTS <- function(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50, delta = 
   epsilon_trace <- rep(NA, n_iter)
   depth_trace   <- rep(NA, n_iter)
   par_list <- list(M_adapt = M_adapt)
-  for(iter in 1:n_iter){
+  for(iter in 1:n_iter) {
     nuts <- NUTS_one_step(theta, iter, f, grad_f, par_list, delta = delta, max_treedepth = max_treedepth, eps = eps, verbose = verbose)
     theta <- nuts$theta
     par_list <- nuts$pars
@@ -51,7 +51,7 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
     mu <- log(10*eps)
     H <- 0
     eps_bar <- 1
-  } else{
+  } else {
     eps <- par_list$eps
     eps_bar <- par_list$eps_bar
     H <- par_list$H
@@ -60,8 +60,8 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
   
   r0 <- stats::rnorm(length(theta), 0, sqrt(M_diag))
   u <- stats::runif(1, 0, exp(f(theta) - 0.5 * sum(r0**2 / M_diag)))
-  if(is.nan(u)){
-    warning("NUTS: sampled slice u is NaN")
+  if(!is.finite(u)) {
+    warning("NUTS: sampled slice u is not a number")
     u <- stats::runif(1, 0, 1e5)
   }
   theta_minus <- theta
@@ -77,35 +77,33 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
   while(s == 1){
     # choose direction {-1, 1}
     direction <- sample(c(-1, 1), 1)
-    if(direction == -1){
+    if(direction == -1) {
       temp <- build_tree(theta_minus, r_minus, u, direction, j, eps, theta, r0, f, grad_f, M_diag)
       theta_minus <- temp$theta_minus
       r_minus <- temp$r_minus
-    } else{
+    } else {
       temp <- build_tree(theta_plus, r_plus, u, direction, j, eps, theta, r0, f, grad_f, M_diag)
       theta_plus <- temp$theta_plus
       r_plus <- temp$r_plus
     }
-    if(is.nan(temp$s)) temp$s <- 0
-    if(temp$s == 1){
-      if(stats::runif(1) < temp$n / n){
-        theta <- temp$theta
-      }
+    if(!is.finite(temp$s)) {temp$s <- 0}
+    if(temp$s == 1) {
+      if(stats::runif(1) < temp$n / n) {theta <- temp$theta}
     }
     n <- n + temp$n
     s <- check_NUTS(temp$s, theta_plus, theta_minus, r_plus, r_minus)
     j <- j + 1
-    if(j > max_treedepth){
+    if(j > max_treedepth) {
       warning("NUTS: Reached max tree depth")
       break
     }
   }
-  if(iter <= M_adapt){
+  if(iter <= M_adapt) {
     H <- (1 - 1/(iter + t0))*H + 1/(iter + t0) * (delta - temp$alpha / temp$n_alpha)
     log_eps <- mu - sqrt(iter)/gamma * H
     eps_bar <- exp(iter**(-kappa) * log_eps + (1 - iter**(-kappa)) * log(eps_bar))
     eps <- exp(log_eps)
-  } else{
+  } else {
     eps <- eps_bar
   }
   
