@@ -9,22 +9,33 @@
 #' @param delta Target acceptance ratio, defaults to 0.5
 #' @param max_treedepth Maximum depth of the binary trees constructed by NUTS
 #' @param eps Starting guess for epsilon
+#' @param verbose logical. Message diagnostic info each iteration? Default \code{TRUE}.
 #' @return Matrix with the trace of sampled parameters. Each mcmc iteration in rows and parameters in columns.
 #' @export
-NUTS <- function(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50, delta = 0.5, max_treedepth = 10, eps = 1, verbose = TRUE){
-  theta_trace <- matrix(0, n_iter, length(theta))
+NUTS <- function(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50, delta = 0.5, max_treedepth = 10, eps = 1, verbose = TRUE) {
+  theta_trace   <- matrix(0, n_iter, length(theta))
+  epsilon_trace <- rep(NA, n_iter)
+  depth_trace   <- rep(NA, n_iter)
   par_list <- list(M_adapt = M_adapt)
   for(iter in 1:n_iter){
     nuts <- NUTS_one_step(theta, iter, f, grad_f, par_list, delta = delta, max_treedepth = max_treedepth, eps = eps, verbose = verbose)
     theta <- nuts$theta
     par_list <- nuts$pars
     theta_trace[iter, ] <- theta
+    epsilon_trace[iter] <- par_list$eps
+    depth_trace[iter]   <- par_list$depth
+    
+    if(verbose) {message(paste("n:", format(iter, width=log(n_iter, 10) + 1), "j:", format(par_list$depth, width=2), "e:", par_list$eps))}
   }
+  
+  attributes(theta_trace)$epsilon <- epsilon_trace
+  attributes(theta_trace)$depth   <- depth_trace
+  
   theta_trace
 }
 
 
-NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_treedepth = 10, eps = 1, verbose = TRUE){
+NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_treedepth = 10, eps = 1, verbose = TRUE) {
   kappa <- 0.75
   t0 <- 10
   gamma <- 0.05
@@ -34,7 +45,7 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
   } else{
     M_diag <- par_list$M_diag
   }
-
+  
   if(iter == 1){
     eps <- find_reasonable_epsilon(theta, f, grad_f, M_diag, eps = eps, verbose = verbose)
     mu <- log(10*eps)
@@ -46,12 +57,12 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
     H <- par_list$H
     mu <- par_list$mu
   }
-
-  r0 <- rnorm(length(theta), 0, sqrt(M_diag))
-  u <- runif(1, 0, exp(f(theta) - 0.5 * sum(r0**2 / M_diag)))
+  
+  r0 <- stats::rnorm(length(theta), 0, sqrt(M_diag))
+  u <- stats::runif(1, 0, exp(f(theta) - 0.5 * sum(r0**2 / M_diag)))
   if(is.nan(u)){
     warning("NUTS: sampled slice u is NaN")
-    u <- runif(1, 0, 1e5)
+    u <- stats::runif(1, 0, 1e5)
   }
   theta_minus <- theta
   theta_plus <- theta
@@ -61,7 +72,7 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
   n=1
   s=1
   if(iter > M_adapt){
-    eps <- runif(1, 0.9*eps_bar, 1.1*eps_bar)
+    eps <- stats::runif(1, 0.9*eps_bar, 1.1*eps_bar)
   }
   while(s == 1){
     # choose direction {-1, 1}
@@ -77,7 +88,7 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
     }
     if(is.nan(temp$s)) temp$s <- 0
     if(temp$s == 1){
-      if(runif(1) < temp$n / n){
+      if(stats::runif(1) < temp$n / n){
         theta <- temp$theta
       }
     }
@@ -97,7 +108,7 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
   } else{
     eps <- eps_bar
   }
-
+  
   return(list(theta = theta,
-              pars = list(eps = eps, eps_bar = eps_bar, H = H, mu = mu, M_adapt = M_adapt, M_diag = M_diag)))
+              pars = list(eps = eps, eps_bar = eps_bar, H = H, mu = mu, M_adapt = M_adapt, M_diag = M_diag, depth = j)))
 }

@@ -25,6 +25,8 @@ NUTS(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50, delta = 0.5,
 \item{max_treedepth}{Maximum depth of the binary trees constructed by NUTS}
 
 \item{eps}{Starting guess for epsilon}
+
+\item{verbose}{logical. Message diagnostic info each iteration? Default \code{TRUE}.}
 }
 \value{
 Matrix with the trace of sampled parameters. Each mcmc iteration in rows and parameters in columns.
