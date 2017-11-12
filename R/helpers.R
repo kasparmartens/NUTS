@@ -35,15 +35,17 @@ check_NUTS <- function(s, theta_plus, theta_minus, r_plus, r_minus) {
   s && condition1 && condition2
 }
 
-build_tree <- function(theta, r, u, v, j, eps, theta0, r0, f, grad_f, M_diag, Delta_max = 1000) {
+build_tree <- function(theta, r, log_u, v, j, eps, theta0, r0, f, grad_f, M_diag, Delta_max = 1000) {
   if(j == 0) {
     proposed <- leapfrog_step(theta, r, v*eps, grad_f, M_diag)
     theta <- proposed$theta
     r <- proposed$r
     log_prob  <- joint_log_density(theta,  r,  f, M_diag)
     log_prob0 <- joint_log_density(theta0, r0, f, M_diag)
-    n <- (log(u) <= log_prob)
-    s <- (log(u) <= log_prob + Delta_max)
+    
+    n <- (log_u <= log_prob)
+    s <- (log_u <= log_prob + Delta_max)
+    
     alpha <- min(1, exp(log_prob - log_prob0))
     
     if(!is.finite(alpha)) {stop("NUTS requires finite values of f")}
@@ -53,7 +55,7 @@ build_tree <- function(theta, r, u, v, j, eps, theta0, r0, f, grad_f, M_diag, De
     return(list(theta_minus=theta, theta_plus=theta, theta=theta, r_minus=r,
                 r_plus=r, s=s, n=n, alpha=alpha, n_alpha=1))
   } else {
-    obj0 <- build_tree(theta, r, u, v, j-1, eps, theta0, r0, f, grad_f, M_diag)
+    obj0 <- build_tree(theta, r, log_u, v, j-1, eps, theta0, r0, f, grad_f, M_diag)
     theta_minus <- obj0$theta_minus
     r_minus <- obj0$r_minus
     theta_plus <- obj0$theta_plus
@@ -61,11 +63,11 @@ build_tree <- function(theta, r, u, v, j, eps, theta0, r0, f, grad_f, M_diag, De
     theta <- obj0$theta
     if(obj0$s == 1) {
       if(v == -1) {
-        obj1 <- build_tree(obj0$theta_minus, obj0$r_minus, u, v, j-1, eps, theta0, r0, f, grad_f, M_diag)
+        obj1 <- build_tree(obj0$theta_minus, obj0$r_minus, log_u, v, j-1, eps, theta0, r0, f, grad_f, M_diag)
         theta_minus <- obj1$theta_minus
         r_minus <- obj1$r_minus
       } else {
-        obj1 <- build_tree(obj0$theta_plus, obj0$r_plus, u, v, j-1, eps, theta0, r0, f, grad_f, M_diag)
+        obj1 <- build_tree(obj0$theta_plus, obj0$r_plus, log_u, v, j-1, eps, theta0, r0, f, grad_f, M_diag)
         theta_plus <- obj1$theta_plus
         r_plus <- obj1$r_plus
       }

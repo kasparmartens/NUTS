@@ -40,49 +40,50 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
   t0 <- 10
   gamma <- 0.05
   M_adapt <- par_list$M_adapt
-  if(is.null(par_list$M_diag)){
-    M_diag <- rep(1, length(theta))
-  } else{
-    M_diag <- par_list$M_diag
-  }
+  M_diag  <- if(is.null(par_list$M_diag)) {rep(1, length(theta))} else {par_list$M_diag}
   
-  if(iter == 1){
-    eps <- find_reasonable_epsilon(theta, f, grad_f, M_diag, eps = eps, verbose = verbose)
-    mu <- log(10*eps)
-    H <- 0
+  if(iter == 1) {
+    eps     <- find_reasonable_epsilon(theta, f, grad_f, M_diag, eps = eps, verbose = verbose)
+    mu      <- log(10*eps)
+    H       <- 0
     eps_bar <- 1
   } else {
-    eps <- par_list$eps
+    eps     <- par_list$eps
     eps_bar <- par_list$eps_bar
-    H <- par_list$H
-    mu <- par_list$mu
+    H       <- par_list$H
+    mu      <- par_list$mu
   }
   
-  r0 <- stats::rnorm(length(theta), 0, sqrt(M_diag))
-  u <- stats::runif(1, 0, exp(f(theta) - 0.5 * sum(r0**2 / M_diag)))
-  if(!is.finite(u)) {
+  eps <- if(iter > M_adapt) {stats::runif(1, 0.9 * eps_bar, 1.1 * eps_bar)} else {eps}
+  
+  r0  <- stats::rnorm(length(theta), 0, sqrt(M_diag))
+  
+  ## take log of u, because on meaningful-sized problems u itself will usually underflow, leading to kablooie
+  ## u ~ Uniform(0, p) => -log(u) + p ~ Exponential(1)
+  log_u <- joint_log_density(theta, r0, f, M_diag) - stats::rexp(1)
+  if(!is.finite(log_u)) {
     warning("NUTS: sampled slice u is not a number")
-    u <- stats::runif(1, 0, 1e5)
+    log_u <- log(stats::runif(1, 0, 1e5))
   }
+  
   theta_minus <- theta
-  theta_plus <- theta
-  r_minus <- r0
-  r_plus <- r0
-  j=0
-  n=1
-  s=1
-  if(iter > M_adapt){
-    eps <- stats::runif(1, 0.9*eps_bar, 1.1*eps_bar)
-  }
-  while(s == 1){
+  theta_plus  <- theta
+  r_minus     <- r0
+  r_plus      <- r0
+  
+  j <- 0
+  n <- 1
+  s <- 1
+  
+  while(s == 1) {
     # choose direction {-1, 1}
     direction <- sample(c(-1, 1), 1)
     if(direction == -1) {
-      temp <- build_tree(theta_minus, r_minus, u, direction, j, eps, theta, r0, f, grad_f, M_diag)
+      temp <- build_tree(theta_minus, r_minus, log_u, direction, j, eps, theta, r0, f, grad_f, M_diag)
       theta_minus <- temp$theta_minus
       r_minus <- temp$r_minus
     } else {
-      temp <- build_tree(theta_plus, r_plus, u, direction, j, eps, theta, r0, f, grad_f, M_diag)
+      temp <- build_tree(theta_plus, r_plus, log_u, direction, j, eps, theta, r0, f, grad_f, M_diag)
       theta_plus <- temp$theta_plus
       r_plus <- temp$r_plus
     }
