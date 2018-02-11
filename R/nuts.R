@@ -16,7 +16,7 @@ NUTS <- function(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50, delta = 
   theta_trace   <- matrix(0, n_iter, length(theta))
   epsilon_trace <- rep(NA, n_iter)
   depth_trace   <- rep(NA, n_iter)
-  par_list <- list(M_adapt = M_adapt)
+  par_list <- list(M_adapt = M_adapt, M_diag = M_diag)
   for(iter in 1:n_iter) {
     nuts <- NUTS_one_step(theta, iter, f, grad_f, par_list, delta = delta, max_treedepth = max_treedepth, eps = eps, verbose = verbose)
     theta <- nuts$theta
@@ -63,7 +63,7 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
   log_u <- joint_log_density(theta, r0, f, M_diag) - stats::rexp(1)
   if(!is.finite(log_u)) {
     warning("NUTS: sampled slice u is not a number")
-    log_u <- log(stats::runif(1, 0, 1e5))
+    log_u <- log(stats::runif(1, 0, 1e5)) # the hell?
   }
   
   theta_minus <- theta
