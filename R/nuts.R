@@ -46,7 +46,7 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
     eps     <- find_reasonable_epsilon(theta, f, grad_f, M_diag, eps = eps, verbose = verbose)
     mu      <- log(10*eps)
     H       <- 0
-    eps_bar <- 1
+    eps_bar <- if(iter > M_adapt) {eps} else {1} # wait this is the wrong place though... isn't it?
   } else {
     eps     <- par_list$eps
     eps_bar <- par_list$eps_bar
