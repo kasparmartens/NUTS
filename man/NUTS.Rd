@@ -4,8 +4,9 @@
 \alias{NUTS}
 \title{No-U-Turn sampler}
 \usage{
-NUTS(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50, delta = 0.5,
-  max_treedepth = 10, eps = 1, verbose = TRUE)
+NUTS(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50,
+  delta = 0.5, max_treedepth = 10, eps = 1, find = TRUE,
+  verbose = TRUE)
 }
 \arguments{
 \item{theta}{Initial value for the parameters}
@@ -25,6 +26,8 @@ NUTS(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50, delta = 0.5,
 \item{max_treedepth}{Maximum depth of the binary trees constructed by NUTS}
 
 \item{eps}{Starting guess for epsilon}
+
+\item{find}{Allow NUTS to make a better guess at epsilon? Default \code{TRUE}.}
 
 \item{verbose}{logical. Message diagnostic info each iteration? Default \code{TRUE}.}
 }

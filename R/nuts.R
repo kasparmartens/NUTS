@@ -9,23 +9,29 @@
 #' @param delta Target acceptance ratio, defaults to 0.5
 #' @param max_treedepth Maximum depth of the binary trees constructed by NUTS
 #' @param eps Starting guess for epsilon
+#' @param find Allow NUTS to make a better guess at epsilon? Default \code{TRUE}.
 #' @param verbose logical. Message diagnostic info each iteration? Default \code{TRUE}.
 #' @return Matrix with the trace of sampled parameters. Each mcmc iteration in rows and parameters in columns.
 #' @export
-NUTS <- function(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50, delta = 0.5, max_treedepth = 10, eps = 1, verbose = TRUE) {
+NUTS <- function(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50, delta = 0.5, max_treedepth = 10, eps = 1, find = TRUE,
+                 verbose = TRUE) {
   theta_trace   <- matrix(0, n_iter, length(theta))
   epsilon_trace <- rep(NA, n_iter)
   depth_trace   <- rep(NA, n_iter)
   par_list <- list(M_adapt = M_adapt, M_diag = M_diag)
   for(iter in 1:n_iter) {
-    nuts <- NUTS_one_step(theta, iter, f, grad_f, par_list, delta = delta, max_treedepth = max_treedepth, eps = eps, verbose = verbose)
+    nuts <- NUTS_one_step(theta, iter, f, grad_f, par_list, delta = delta, max_treedepth = max_treedepth,
+                          eps = eps, find = find, verbose = verbose)
     theta <- nuts$theta
     par_list <- nuts$pars
     theta_trace[iter, ] <- theta
     epsilon_trace[iter] <- par_list$eps
     depth_trace[iter]   <- par_list$depth
     
-    if(verbose) {message(paste("n:", format(iter, width=log(n_iter, 10) + 1), "j:", format(par_list$depth, width=2), "e:", par_list$eps))}
+    if(verbose) {message(paste("n:", format(iter, width=log(n_iter, 10) + 1), 
+                               "j:", format(par_list$depth, width=2), 
+                               "e:", format(par_list$eps, width=12),
+                               "t:", Sys.time()))}
   }
   
   attributes(theta_trace)$epsilon <- epsilon_trace
@@ -35,7 +41,7 @@ NUTS <- function(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50, delta = 
 }
 
 
-NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_treedepth = 10, eps = 1, verbose = TRUE) {
+NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_treedepth = 10, eps = 1, find = TRUE, verbose = TRUE) {
   kappa <- 0.75
   t0 <- 10
   gamma <- 0.05
@@ -43,7 +49,7 @@ NUTS_one_step <- function(theta, iter, f, grad_f, par_list, delta = 0.5, max_tre
   M_diag  <- if(is.null(par_list$M_diag)) {rep(1, length(theta))} else {par_list$M_diag}
   
   if(iter == 1) {
-    eps     <- find_reasonable_epsilon(theta, f, grad_f, M_diag, eps = eps, verbose = verbose)
+    eps     <- if(find) {find_reasonable_epsilon(theta, f, grad_f, M_diag, eps = eps, verbose = verbose)} else {eps}
     mu      <- log(10*eps)
     H       <- 0
     eps_bar <- if(iter > M_adapt) {eps} else {1} # wait this is the wrong place though... isn't it?
