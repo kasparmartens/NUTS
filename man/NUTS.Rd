@@ -9,7 +9,7 @@ NUTS(
   f,
   grad_f,
   n_iter,
-  M_diag = NULL,
+  M = diag(length(theta)),
   M_adapt = 50,
   delta = 0.5,
   max_treedepth = 10,
@@ -27,7 +27,7 @@ NUTS(
 
 \item{n_iter}{Number of MCMC iterations}
 
-\item{M_diag}{Diagonal elements of the mass matrix in HMC. Defaults to ones.}
+\item{M}{the HMC mass matrix. Defaults to \code{diag(length(theta))}.}
 
 \item{M_adapt}{Parameter M_adapt in algorithm 6 in the NUTS paper}
 
