@@ -8,3 +8,5 @@
 
 # foo <- NUTS::NUTS(x, test_f, test_g, 1024, NULL,         0)
 # bar <- NUTS::NUTS(x, test_f, test_g, 1024, diag(test_h), 0)
+# baz <- NUTS::NUTS(x, test_f, test_g, 1024, test_h, 0)
+# baz <- NUTS::NUTS(x, test_f, test_g, 1024, test_h, 0, eps = 1, find=FALSE)
