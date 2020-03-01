@@ -4,9 +4,19 @@
 \alias{NUTS}
 \title{No-U-Turn sampler}
 \usage{
-NUTS(theta, f, grad_f, n_iter, M_diag = NULL, M_adapt = 50,
-  delta = 0.5, max_treedepth = 10, eps = 1, find = TRUE,
-  verbose = TRUE)
+NUTS(
+  theta,
+  f,
+  grad_f,
+  n_iter,
+  M_diag = NULL,
+  M_adapt = 50,
+  delta = 0.5,
+  max_treedepth = 10,
+  eps = 1,
+  find = TRUE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{theta}{Initial value for the parameters}

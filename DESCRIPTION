@@ -1,11 +1,11 @@
 Package: NUTS
 Type: Package
 Title: No-U-Turn sampler for HMC
-Version: 0.2.0
+Version: 0.2.8
 Author: Kaspar Märtens, Gordon Arsenoff
-Maintainer: Gordon Arsenoff <arsenoff@princeton.edu>
+Maintainer: Gordon Arsenoff <deep.friar@gmail.com>
 Description: This R package implements the No-U-Turn sampler for Hamiltonian Monte Carlo, as described algorithm 6 in the paper by Hoffman and Gelman.
 License: file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
