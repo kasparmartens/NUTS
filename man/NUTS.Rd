@@ -11,6 +11,8 @@ NUTS(
   n_iter,
   M = diag(length(theta)),
   M_adapt = 50,
+  M_chol = Matrix::chol(M),
+  M_inv = Matrix::solve(M),
   delta = 0.5,
   max_treedepth = 10,
   eps = 1,
@@ -30,6 +32,10 @@ NUTS(
 \item{M}{the HMC mass matrix. Defaults to \code{diag(length(theta))}.}
 
 \item{M_adapt}{Parameter M_adapt in algorithm 6 in the NUTS paper}
+
+\item{M_chol}{The cholesky decomposition of \code{M}. Default \code{Matrix::chol(M)}.}
+
+\item{M_inv}{The inverse of \code{M}. Default \code{Matrix::solve(M)}.}
 
 \item{delta}{Target acceptance ratio, defaults to 0.5}
 

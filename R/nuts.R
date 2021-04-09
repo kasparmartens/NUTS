@@ -6,6 +6,8 @@
 #' @param n_iter Number of MCMC iterations
 #' @param M the HMC mass matrix. Defaults to \code{diag(length(theta))}.
 #' @param M_adapt Parameter M_adapt in algorithm 6 in the NUTS paper
+#' @param M_chol The cholesky decomposition of \code{M}. Default \code{Matrix::chol(M)}.
+#' @param M_inv The inverse of \code{M}. Default \code{Matrix::solve(M)}.
 #' @param delta Target acceptance ratio, defaults to 0.5
 #' @param max_treedepth Maximum depth of the binary trees constructed by NUTS
 #' @param eps Starting guess for epsilon
@@ -13,12 +15,19 @@
 #' @param verbose logical. Message diagnostic info each iteration? Default \code{TRUE}.
 #' @return Matrix with the trace of sampled parameters. Each mcmc iteration in rows and parameters in columns.
 #' @export
-NUTS <- function(theta, f, grad_f, n_iter, M = diag(length(theta)), M_adapt = 50, delta = 0.5, max_treedepth = 10, eps = 1, find = TRUE,
+NUTS <- function(theta, 
+                 f, 
+                 grad_f, 
+                 n_iter, 
+                 M = diag(length(theta)), 
+                 M_adapt = 50, 
+                 M_chol = Matrix::chol(M),
+                 M_inv = Matrix::solve(M),
+                 delta = 0.5, 
+                 max_treedepth = 10, 
+                 eps = 1,
+                 find = TRUE,
                  verbose = TRUE) {
-  
-  M             <- Matrix::Matrix(if(is.null(M)) {diag(length(theta))} else {M})
-  M_chol        <- Matrix::chol(M)
-  M_inv         <- Matrix::solve(M)
   
   theta_trace   <- matrix(0, n_iter, length(theta))
   epsilon_trace <- rep(NA, n_iter)
